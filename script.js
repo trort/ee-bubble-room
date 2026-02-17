@@ -9,7 +9,7 @@ import {
 // ---- DOM refs ----
 const video = document.getElementById('webcam');
 const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d', { willReadFrequently: true });
+const ctx = canvas.getContext('2d');
 const startScreen = document.getElementById('start-screen');
 const startBtn = document.getElementById('start-btn');
 const hud = document.getElementById('hud');
@@ -35,6 +35,25 @@ const THEME_COLORS = {
     undersea: { bg: '#012040', accent: '#00e5ff' },
 };
 
+// ---- Preloaded theme images ----
+const bgImages = {};
+const borderImages = {};
+const THEMES = ['unicorn', 'rainbow', 'forest', 'undersea'];
+THEMES.forEach(t => {
+    const bg = new Image();
+    bg.src = `assets/${t}_bg.png`;
+    bgImages[t] = bg;
+    const br = new Image();
+    br.src = `assets/${t}_border.png`;
+    borderImages[t] = br;
+});
+
+// ---- Offscreen canvas for silhouette (avoids getImageData) ----
+let offCanvas = null;
+let offCtx = null;
+let maskCanvas = null;
+let maskCtx = null;
+
 const SILHOUETTE_RGB = {
     hotpink: [255, 105, 180],
     cyan: [0, 255, 255],
@@ -57,7 +76,7 @@ const MASK_SMOOTHING = 0.35; // blend factor: 0 = all old, 1 = all new
 
 // ---- Game State ----
 const GAME_DURATION_MS = 60_000;
-const BUBBLE_POOL_SIZE = 120; // many more bubbles
+const BUBBLE_POOL_SIZE = 60;
 
 let gameActive = false;
 let score = 0;
@@ -273,17 +292,19 @@ function spawnBubble(isSolar = false) {
 
 // ---- Bubble-Bubble Collision ----
 function resolveBubbleBubbleCollisions() {
-    const active = bubbles.filter(b => b.active);
-    for (let i = 0; i < active.length; i++) {
-        for (let j = i + 1; j < active.length; j++) {
-            const a = active[i];
-            const b = active[j];
+    // Iterate directly over pool — no intermediate array allocation
+    for (let i = 0; i < bubbles.length; i++) {
+        const a = bubbles[i];
+        if (!a.active) continue;
+        for (let j = i + 1; j < bubbles.length; j++) {
+            const b = bubbles[j];
+            if (!b.active) continue;
             const dx = b.x - a.x;
             const dy = b.y - a.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
+            const distSq = dx * dx + dy * dy;
             const minDist = a.radius + b.radius;
-            if (dist < minDist && dist > 0.01) {
-                // Separate bubbles
+            if (distSq < minDist * minDist && distSq > 0.01) {
+                const dist = Math.sqrt(distSq);
                 const nx = dx / dist;
                 const ny = dy / dist;
                 const overlap = minDist - dist;
@@ -295,11 +316,10 @@ function resolveBubbleBubbleCollisions() {
                 b.x += nx * overlap * ratioB;
                 b.y += ny * overlap * ratioB;
 
-                // Elastic-ish velocity exchange along collision normal
                 const dvx = a.vx - b.vx;
                 const dvy = a.vy - b.vy;
                 const dvDotN = dvx * nx + dvy * ny;
-                if (dvDotN > 0) { // only resolve if approaching
+                if (dvDotN > 0) {
                     const impulse = dvDotN * BUBBLE_BOUNCE;
                     a.vx -= impulse * ratioA * nx;
                     a.vy -= impulse * ratioA * ny;
@@ -464,6 +484,7 @@ function renderHighScores() {
 }
 
 // ---- Main Game Loop ----
+let segFrameToggle = false; // throttle segmentation to every 2nd frame
 function gameLoop(now) {
     if (!gameActive) return;
 
@@ -472,7 +493,10 @@ function gameLoop(now) {
     timerEl.textContent = `Time: ${remaining}`;
     if (remaining <= 0) { endGame(); return; }
 
-    runSegmentation();
+    // Run segmentation every other frame for performance
+    segFrameToggle = !segFrameToggle;
+    if (segFrameToggle) runSegmentation();
+
     updateGame(now);
     drawGame(now);
     requestAnimationFrame(gameLoop);
@@ -525,10 +549,11 @@ function runSegmentation() {
 function updateGame(now) {
     const elapsed = now - gameStartMs;
 
-    // Adaptive spawn: spawn multiple per frame if few bubbles exist
-    const activeCnt = bubbles.filter(b => b.active).length;
-    const targetBubbles = 25 + Math.floor(elapsed / 3000); // ramp up over time
-    const interval = activeCnt < targetBubbles ? 200 : 600;
+    // Count active bubbles without allocating an array
+    let activeCnt = 0;
+    for (let i = 0; i < bubbles.length; i++) if (bubbles[i].active) activeCnt++;
+    const targetBubbles = 15 + Math.floor(elapsed / 4000);
+    const interval = activeCnt < targetBubbles ? 250 : 700;
 
     if (now - lastSpawnMs > interval) {
         spawnBubble(false);
@@ -603,49 +628,88 @@ function drawGame(now) {
     const W = canvas.width;
     const H = canvas.height;
 
-    // 1. Background
+    // 1. Background image (fall back to solid color)
     const theme = THEME_COLORS[selectedTheme] || THEME_COLORS.unicorn;
-    ctx.fillStyle = theme.bg;
-    ctx.fillRect(0, 0, W, H);
+    const bgImg = bgImages[selectedTheme];
+    if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
+        ctx.drawImage(bgImg, 0, 0, W, H);
+    } else {
+        ctx.fillStyle = theme.bg;
+        ctx.fillRect(0, 0, W, H);
+    }
 
-    // 2. Player silhouette (personMask is pre-mirrored)
-    const rgb = SILHOUETTE_RGB[selectedColor] || SILHOUETTE_RGB.hotpink;
-    if (personMask && maskW === W && maskH === H) {
-        const imgData = ctx.getImageData(0, 0, W, H);
-        const d = imgData.data;
-        for (let i = 0; i < personMask.length; i++) {
-            if (personMask[i] > PERSON_THRESHOLD) {
-                const idx = i * 4;
-                // Neon glow effect: brighter in the center (higher confidence)
-                const intensity = Math.min(1.0, personMask[i] * 1.3);
-                d[idx] = Math.floor(rgb[0] * intensity);
-                d[idx + 1] = Math.floor(rgb[1] * intensity);
-                d[idx + 2] = Math.floor(rgb[2] * intensity);
-                d[idx + 3] = Math.floor(200 * intensity);
-            }
+    // 2. Player silhouette using offscreen canvas compositing (fast, no getImageData)
+    if (personMask && maskW > 0 && maskH > 0) {
+        // Ensure offscreen canvases match size
+        if (!offCanvas || offCanvas.width !== W || offCanvas.height !== H) {
+            offCanvas = document.createElement('canvas');
+            offCanvas.width = W;
+            offCanvas.height = H;
+            offCtx = offCanvas.getContext('2d');
+            maskCanvas = document.createElement('canvas');
+            maskCanvas.width = W;
+            maskCanvas.height = H;
+            maskCtx = maskCanvas.getContext('2d');
         }
-        ctx.putImageData(imgData, 0, 0);
+
+        // Build mask image from personMask Float32Array
+        const maskImgData = maskCtx.createImageData(maskW, maskH);
+        const md = maskImgData.data;
+        for (let i = 0; i < personMask.length; i++) {
+            const v = personMask[i];
+            if (v > PERSON_THRESHOLD) {
+                const a = Math.floor(Math.min(1.0, v * 1.3) * 220);
+                const idx = i * 4;
+                md[idx] = 255;
+                md[idx + 1] = 255;
+                md[idx + 2] = 255;
+                md[idx + 3] = a;
+            }
+            // else stays 0,0,0,0 (transparent)
+        }
+        maskCtx.putImageData(maskImgData, 0, 0);
+
+        // Draw silhouette color, then cut with mask
+        const rgb = SILHOUETTE_RGB[selectedColor] || SILHOUETTE_RGB.hotpink;
+        offCtx.clearRect(0, 0, W, H);
+        offCtx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+        offCtx.fillRect(0, 0, W, H);
+        offCtx.globalCompositeOperation = 'destination-in';
+        offCtx.drawImage(maskCanvas, 0, 0, W, H);
+        offCtx.globalCompositeOperation = 'source-over';
+
+        // Composite onto main canvas
+        ctx.drawImage(offCanvas, 0, 0);
     }
 
     // 3. Bubbles
-    bubbles.forEach(b => b.draw(ctx, now));
+    for (let i = 0; i < bubbles.length; i++) bubbles[i].draw(ctx, now);
 
     // 4. Particles
-    particles.forEach(p => {
+    for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
         ctx.globalAlpha = p.life;
         ctx.fillStyle = p.color;
         const s = p.size * p.life;
         ctx.beginPath();
         ctx.arc(p.x, p.y, s, 0, Math.PI * 2);
         ctx.fill();
-    });
+    }
+    ctx.globalAlpha = 1;
+
     // 5. Screen flash (from solar flare pop)
     if (screenFlashAlpha > 0) {
         ctx.globalAlpha = screenFlashAlpha;
         ctx.fillStyle = screenFlashColor;
         ctx.fillRect(0, 0, W, H);
         ctx.globalAlpha = 1;
-        screenFlashAlpha -= 0.04; // fade over ~0.5s
+        screenFlashAlpha -= 0.04;
+    }
+
+    // 6. Border overlay (drawn on canvas — scales correctly at any aspect ratio)
+    const borderImg = borderImages[selectedTheme];
+    if (borderImg && borderImg.complete && borderImg.naturalWidth > 0) {
+        ctx.drawImage(borderImg, 0, 0, W, H);
     }
 }
 
@@ -690,15 +754,10 @@ function popBubble(b) {
 }
 
 // ---- UI Wiring ----
-const gameBorder = document.getElementById('game-border');
-// Set initial border
-gameBorder.className = selectedTheme;
-
 themeBtns.forEach(btn => btn.addEventListener('click', () => {
     themeBtns.forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     selectedTheme = btn.dataset.theme;
-    gameBorder.className = selectedTheme;
 }));
 
 colorBtns.forEach(btn => btn.addEventListener('click', () => {
