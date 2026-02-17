@@ -103,6 +103,7 @@ const EDGE_MARGIN = 10;   // px from canvas edge where bubbles bounce
 const BOUNCE_DAMPING = 0.85; // energy retained on bounce
 const BUBBLE_BOUNCE = 0.6;  // energy retained on bubble-bubble bounce
 const MIN_SPAWN_DIST = 80;   // min px between spawn points
+let spawnSide = 0;           // cycles 0=left, 1=right, 2=top
 
 // ---- Bubble Pool ----
 class Bubble {
@@ -141,7 +142,18 @@ class Bubble {
             this.y = h * 0.1 + Math.random() * (h * 0.8);
         }
 
-        const baseAngle = this.x < w / 2 ? 0 : Math.PI;
+        // Determine launch angle based on spawn edge
+        let baseAngle;
+        if (this.y < 0) {
+            // Spawned from top: move downward
+            baseAngle = Math.PI / 2;
+        } else if (this.x < w / 2) {
+            // Spawned from left: move rightward
+            baseAngle = 0;
+        } else {
+            // Spawned from right: move leftward
+            baseAngle = Math.PI;
+        }
         const spread = (Math.random() - 0.5) * (Math.PI * 0.65);
         const speed = unit * (0.005 + Math.random() * 0.005); // relative speed
         this.vx = Math.cos(baseAngle + spread) * speed;
@@ -275,11 +287,20 @@ for (let i = 0; i < BUBBLE_POOL_SIZE; i++) bubbles.push(new Bubble());
 // ---- Smart Spawning ----
 // Finds a random edge position that is at least MIN_SPAWN_DIST away from
 // all other active bubbles' positions.
+function pickEdgePoint(side, w, h) {
+    // side: 0=left, 1=right, 2=top
+    if (side === 0) return [-3, h * 0.1 + Math.random() * (h * 0.8)];
+    if (side === 1) return [w + 3, h * 0.1 + Math.random() * (h * 0.8)];
+    return [w * 0.1 + Math.random() * (w * 0.8), -3]; // top
+}
+
 function findSpawnPos(w, h, attempts = 12) {
+    // Round-robin: left → right → top
+    const side = spawnSide % 3;
+    spawnSide++;
+
     for (let a = 0; a < attempts; a++) {
-        const fromLeft = Math.random() < 0.5;
-        const sx = fromLeft ? -3 : w + 3;
-        const sy = h * 0.1 + Math.random() * (h * 0.8);
+        const [sx, sy] = pickEdgePoint(side, w, h);
         let tooClose = false;
         for (const ob of bubbles) {
             if (!ob.active) continue;
@@ -292,9 +313,8 @@ function findSpawnPos(w, h, attempts = 12) {
         }
         if (!tooClose) return [sx, sy];
     }
-    // Fallback: random edge position anyway
-    const fromLeft = Math.random() < 0.5;
-    return [fromLeft ? -3 : w + 3, h * 0.1 + Math.random() * (h * 0.8)];
+    // Fallback
+    return pickEdgePoint(side, w, h);
 }
 
 function spawnBubble(isSolar = false) {
@@ -396,14 +416,30 @@ initSegmenter();
 async function enableCam() {
     if (webcamRunning) return true;
     try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: { ideal: 640, max: 640 }, height: { ideal: 480, max: 480 }, facingMode: 'user' }
+        // First acquire without size constraints to detect camera orientation
+        let stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user' }
         });
         video.srcObject = stream;
         await video.play();
+
+        const isPortrait = video.videoHeight > video.videoWidth;
+
+        // Stop initial stream and re-acquire with orientation-appropriate constraints
+        stream.getTracks().forEach(t => t.stop());
+
+        const constraints = isPortrait
+            ? { width: { ideal: 480, max: 480 }, height: { ideal: 640, max: 640 }, facingMode: 'user' }
+            : { width: { ideal: 640, max: 640 }, height: { ideal: 480, max: 480 }, facingMode: 'user' };
+
+        stream = await navigator.mediaDevices.getUserMedia({ video: constraints });
+        video.srcObject = stream;
+        await video.play();
+
         webcamRunning = true;
         cameraActive = true;
-        console.log('[Bubble Room] Camera active', video.videoWidth, 'x', video.videoHeight);
+        console.log('[Bubble Room] Camera active', video.videoWidth, 'x', video.videoHeight,
+            isPortrait ? '(portrait)' : '(landscape)');
         return true;
     } catch (e) {
         console.warn('[Bubble Room] Camera error:', e);
