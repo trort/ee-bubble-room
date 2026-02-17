@@ -25,8 +25,8 @@ const themeBtns = document.querySelectorAll('.theme-btn');
 const colorBtns = document.querySelectorAll('.color-btn');
 
 // ---- Settings ----
-let selectedTheme = 'unicorn';
-let selectedColor = 'hotpink';
+let selectedTheme = 'random';
+let selectedColor = 'random';
 
 const THEME_COLORS = {
     unicorn: { bg: '#2e0854', accent: '#e040fb' },
@@ -511,6 +511,13 @@ function runCountdown() {
 // ---- Game Start / End ----
 async function handleStart() {
     startBtn.disabled = true;
+
+    // Resolve random selections
+    const themes = ['unicorn', 'rainbow', 'forest', 'undersea'];
+    const colors = Object.keys(SILHOUETTE_RGB);
+    if (selectedTheme === 'random') selectedTheme = themes[Math.floor(Math.random() * themes.length)];
+    if (selectedColor === 'random') selectedColor = colors[Math.floor(Math.random() * colors.length)];
+
     const camOk = await enableCam();
 
     // Set canvas to full window size
