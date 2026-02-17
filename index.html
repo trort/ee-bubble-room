@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Bubble Room - Junior Edition</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div id="game-container">
+        <!-- Camera feed hidden, we draw to canvas -->
+        <video id="webcam" autoplay playsinline></video>
+
+        <!-- Game Canvas -->
+        <canvas id="game-canvas"></canvas>
+
+        <!-- UI Overlays -->
+        <div id="ui-layer">
+            <div id="start-screen" class="overlay active">
+                <h1>🫧 Bubble Room</h1>
+                <p class="subtitle">Junior Edition</p>
+                <div id="theme-select">
+                    <p class="label">Choose a Theme:</p>
+                    <div class="theme-buttons">
+                        <button class="theme-btn selected" data-theme="unicorn">🦄 Unicorn</button>
+                        <button class="theme-btn" data-theme="rainbow">🌈 Rainbow</button>
+                        <button class="theme-btn" data-theme="forest">🌲 Forest</button>
+                        <button class="theme-btn" data-theme="undersea">🐠 Undersea</button>
+                    </div>
+                </div>
+                <div id="color-select">
+                    <p class="label">Your Silhouette Color:</p>
+                    <div class="color-buttons">
+                        <button class="color-btn selected" data-color="hotpink" style="background: hotpink;"></button>
+                        <button class="color-btn" data-color="cyan" style="background: cyan;"></button>
+                        <button class="color-btn" data-color="lime" style="background: lime;"></button>
+                        <button class="color-btn" data-color="gold" style="background: gold;"></button>
+                    </div>
+                </div>
+                <button id="start-btn" class="big-btn">▶ GO!</button>
+            </div>
+
+            <div id="countdown-overlay" class="overlay hidden">
+                <div id="countdown-number">3</div>
+            </div>
+
+            <div id="hud" class="hidden">
+                <div id="score">Score: 0</div>
+                <div id="timer">Time: 60</div>
+            </div>
+
+            <div id="end-screen" class="overlay hidden">
+                <h2>🎉 Game Over!</h2>
+                <p id="final-score">Score: 0</p>
+                <div id="high-scores-list"></div>
+                <button id="restart-btn" class="big-btn">🔄 PLAY AGAIN</button>
+            </div>
+        </div>
+    </div>
+    <script type="module" src="script.js"></script>
+</body>
+
+</html>

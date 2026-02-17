@@ -1,0 +1,265 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;700;900&display=swap');
+
+:root {
+    --primary: #ff69b4;
+    --secondary: #00bfff;
+    --bg-dark: #1a1028;
+    --font: 'Outfit', 'Comic Sans MS', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body,
+html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    font-family: var(--font);
+    background: var(--bg-dark);
+    color: #fff;
+}
+
+#game-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+#webcam {
+    display: none;
+}
+
+#game-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* ===== Overlays ===== */
+.overlay {
+    pointer-events: auto;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    background: linear-gradient(135deg, rgba(30, 10, 60, 0.92), rgba(10, 30, 80, 0.92));
+    backdrop-filter: blur(8px);
+    text-align: center;
+    z-index: 10;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.active {
+    display: flex !important;
+}
+
+/* ===== Start Screen ===== */
+#start-screen h1 {
+    font-size: 3.5rem;
+    font-weight: 900;
+    background: linear-gradient(90deg, #ff69b4, #00bfff, #ff69b4);
+    background-size: 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 3s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+.subtitle {
+    font-size: 1.2rem;
+    opacity: 0.7;
+    margin-bottom: 10px;
+}
+
+.label {
+    font-size: 1rem;
+    opacity: 0.8;
+    margin-bottom: 4px;
+}
+
+.theme-buttons,
+.color-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.theme-btn {
+    padding: 10px 16px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    font-size: 1rem;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.theme-btn.selected {
+    border-color: var(--primary);
+    background: rgba(255, 105, 180, 0.25);
+    box-shadow: 0 0 12px rgba(255, 105, 180, 0.4);
+}
+
+.color-btn {
+    width: 44px;
+    height: 44px;
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.color-btn.selected {
+    border-color: #fff;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.5);
+    transform: scale(1.15);
+}
+
+.big-btn {
+    padding: 16px 48px;
+    font-size: 2rem;
+    font-weight: 700;
+    font-family: var(--font);
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, var(--primary), #ff1493);
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 6px 24px rgba(255, 105, 180, 0.5);
+    transition: transform 0.1s, box-shadow 0.2s;
+    margin-top: 8px;
+}
+
+.big-btn:hover {
+    box-shadow: 0 8px 32px rgba(255, 105, 180, 0.7);
+}
+
+.big-btn:active {
+    transform: scale(0.95);
+}
+
+/* ===== Countdown ===== */
+#countdown-overlay {
+    z-index: 20;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+#countdown-number {
+    font-size: 12rem;
+    font-weight: 900;
+    animation: pulse 0.6s ease-in-out;
+    text-shadow: 0 0 40px var(--primary), 0 0 80px var(--secondary);
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* ===== HUD ===== */
+#hud {
+    pointer-events: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 16px 24px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+    z-index: 5;
+}
+
+/* ===== End Screen ===== */
+#end-screen h2 {
+    font-size: 3rem;
+    font-weight: 900;
+}
+
+#final-score {
+    font-size: 2rem;
+    margin: 8px 0;
+    color: var(--secondary);
+}
+
+#high-scores-list {
+    font-size: 1rem;
+    margin-bottom: 8px;
+    opacity: 0.8;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 600px) {
+    #start-screen h1 {
+        font-size: 2.2rem;
+    }
+
+    .big-btn {
+        font-size: 1.4rem;
+        padding: 12px 32px;
+    }
+
+    #hud {
+        font-size: 1.1rem;
+        padding: 10px 14px;
+    }
+
+    #countdown-number {
+        font-size: 8rem;
+    }
+
+    .theme-btn {
+        font-size: 0.85rem;
+        padding: 8px 10px;
+    }
+}
