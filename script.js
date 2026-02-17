@@ -432,9 +432,12 @@ function drawPreview() {
     ctx.fillRect(0, 0, W, H);
     if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
         ctx.globalAlpha = 0.4;
+        ctx.save();
+        ctx.scale(2, 2);
         const pat = ctx.createPattern(bgImg, 'repeat');
         ctx.fillStyle = pat;
         ctx.fillRect(0, 0, W, H);
+        ctx.restore();
         ctx.globalAlpha = 1;
     }
 
@@ -742,9 +745,12 @@ function drawGame(now) {
     ctx.fillRect(0, 0, W, H);
     if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
         ctx.globalAlpha = 0.4;
+        ctx.save();
+        ctx.scale(2, 2);
         const pat = ctx.createPattern(bgImg, 'repeat');
         ctx.fillStyle = pat;
         ctx.fillRect(0, 0, W, H);
+        ctx.restore();
         ctx.globalAlpha = 1;
     }
 
