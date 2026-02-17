@@ -123,9 +123,9 @@ class Bubble {
         const unit = Math.min(w, h); // base unit for relative sizing
         this.radius = unit * 0.005; // start tiny
         this.maxRadius = isSolar
-            ? unit * (0.12 + Math.random() * 0.04)   // solar: 12-16% of screen
-            : unit * (0.03 + Math.random() * 0.03);   // normal: 3-6% of screen
-        this.growthRate = unit * 0.001 + Math.random() * unit * 0.0008;
+            ? unit * (0.14 + Math.random() * 0.04)   // solar: 14-18% of screen
+            : unit * (0.04 + Math.random() * 0.04);   // normal: 4-8% of screen
+        this.growthRate = unit * 0.0014 + Math.random() * unit * 0.001;
         this.colorIdx = Math.floor(Math.random() * BUBBLE_FILL.length);
         this.phase = Math.random() * Math.PI * 2;
         this.mass = this.maxRadius * this.maxRadius;
@@ -141,7 +141,7 @@ class Bubble {
 
         const baseAngle = this.x < w / 2 ? 0 : Math.PI;
         const spread = (Math.random() - 0.5) * (Math.PI * 0.65);
-        const speed = unit * (0.003 + Math.random() * 0.004); // relative speed
+        const speed = unit * (0.005 + Math.random() * 0.005); // relative speed
         this.vx = Math.cos(baseAngle + spread) * speed;
         this.vy = Math.sin(baseAngle + spread) * speed;
     }
