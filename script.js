@@ -425,16 +425,17 @@ function drawPreview() {
     const W = canvas.width;
     const H = canvas.height;
 
-    // Background (Tiled)
+    // Background (Tiled, desaturated)
     const bgImg = bgImages[selectedTheme];
+    const theme = THEME_COLORS[selectedTheme] || THEME_COLORS.unicorn;
+    ctx.fillStyle = theme.bg;
+    ctx.fillRect(0, 0, W, H);
     if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
+        ctx.globalAlpha = 0.4;
         const pat = ctx.createPattern(bgImg, 'repeat');
         ctx.fillStyle = pat;
         ctx.fillRect(0, 0, W, H);
-    } else {
-        const theme = THEME_COLORS[selectedTheme] || THEME_COLORS.unicorn;
-        ctx.fillStyle = theme.bg;
-        ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = 1;
     }
 
     // Silhouette (Center Crop/Cover)
@@ -523,8 +524,8 @@ async function handleStart() {
     particles.length = 0;
     personMask = null;
     prevMask = null;
-    maskW = canvas.width;
-    maskH = canvas.height;
+    maskW = 0;
+    maskH = 0;
     gameStartMs = performance.now();
     lastSpawnMs = gameStartMs;
     scoreEl.textContent = 'Score: 0';
@@ -725,23 +726,19 @@ function drawGame(now) {
     const W = canvas.width;
     const H = canvas.height;
 
-    // 1. Background image (cover style)
+    // 1. Background image (tiled, desaturated)
     const theme = THEME_COLORS[selectedTheme] || THEME_COLORS.unicorn;
     const bgImg = bgImages[selectedTheme];
 
-    // Draw background filling the screen (preserving aspect ratio/seamless logic)
-    // Since we regenerated them as seamless, we can just draw them covering the screen.
-    // Or simpler: just stretched? User asked for "periodic". 
-    // Let's use simple cover logic for now or pattern if they were patterns.
-    // User asked "regenerate... so they are periodic".
-    // I will use createPattern for tiling!
+    // Draw solid theme color first, then overlay the pattern at reduced opacity
+    ctx.fillStyle = theme.bg;
+    ctx.fillRect(0, 0, W, H);
     if (bgImg && bgImg.complete && bgImg.naturalWidth > 0) {
+        ctx.globalAlpha = 0.4;
         const pat = ctx.createPattern(bgImg, 'repeat');
         ctx.fillStyle = pat;
         ctx.fillRect(0, 0, W, H);
-    } else {
-        ctx.fillStyle = theme.bg;
-        ctx.fillRect(0, 0, W, H);
+        ctx.globalAlpha = 1;
     }
 
     // 2. Player silhouette (CENTER CROP / COVER)
