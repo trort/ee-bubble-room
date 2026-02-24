@@ -36,6 +36,7 @@
 * **Appearance:** One special, pulsating/glowing bubble spawns from the left or right between **25s and 35s** of the game.
 * **Special Duration:** The solar flare is **special for only 5 seconds** after spawning. During this window it renders with rainbow-pulsing rings and a glowing aura.
 * **Transition to Normal:** After 5 seconds, the solar flare becomes a **normal bubble** — it loses its special glow/visuals and awards normal points if popped.
+* **Size:** Same radius range as normal bubbles (4–8% of the short screen dimension), so it blends in once it goes normal.
 * **The "Big Pop":** If touched while still special (within the first 5 seconds), it triggers a screen-wide clear with a flash effect. Awards 50 points for the solar flare + 5 points per chain-popped bubble.
 
 ### D. Scoring
@@ -66,13 +67,15 @@ Since you are deploying to GitHub, you will need a `assets/` folder. Here is wha
 * [x] **Standard Bubble:** Rendered procedurally in canvas (iridescent highlights and transparency).
 * [x] **Solar Flare:** Rendered procedurally with rainbow gradient, pulsing glow rings, and star highlights.
 
-### Sounds *(Not yet implemented)*
+### Sounds
 
-* [ ] **BGM (4):** One 60-second loop per theme.
-* [ ] **The "Pop":** `bubble_pop.mp3`.
-* [ ] **Solar Flare Sound:** `powerup_spawn.mp3` and `screen_clear.mp3`.
-* [ ] **Presence Alert:** `ping_alert.mp3` (A friendly "ding-dong" or chime to indicate the player is out of frame).
-* [ ] **Countdown:** `tick.mp3` and `start_bell.mp3`.
+* [ ] **BGM (4):** One 60-second loop per theme. *(Not yet implemented)*
+* [x] **The "Pop":** Synthesized via Web Audio API (`playPop`).
+* [x] **Solar Flare Sound:** Rising shimmer on spawn (`playPowerupSpawn`); triumphant C-E-G-C arpeggio + whoosh on screen clear (`playScreenClear`).
+* [ ] **Presence Alert:** `ping_alert` — friendly chime when player leaves frame. *(Not yet implemented)*
+* [x] **Countdown:** Percussive tick each second (`playTick`); warm bell chord at go (`playStartBell`).
+
+> All implemented sounds are synthesized in real time using the **Web Audio API** — no audio files required.
 
 ---
 
@@ -81,7 +84,8 @@ Since you are deploying to GitHub, you will need a `assets/` folder. Here is wha
 To support both a laptop (Landscape) and a phone (Portrait):
 
 1. **Canvas Scaling:** The canvas is set to `window.innerWidth × window.innerHeight` and re-scaled on resize. The video feed (if available) is center-cropped/covered to fill the canvas using computed `renderScale`, `renderDx`, `renderDy`.
-2. **CSS Responsive:** Media queries adjust font sizes and button padding for screens < 600px wide.
+2. **CSS Responsive:** All font sizes use `clamp(min, Xvmin, max)` so they scale fluidly with the viewport on both small phones and large/4K screens. No media queries needed for font sizes.
+3. **Fullscreen Button:** A persistent `⛶` button (fixed, bottom-right) allows the player to enter native fullscreen and hide the browser chrome for a more immersive experience.
 
 ---
 

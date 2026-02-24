@@ -16,9 +16,12 @@ An **AR web game** designed for children aged 4–6. Players become a vibrant ne
 - **Countdown Preview** — See your silhouette during the 3-2-1 countdown so kids can find themselves
 - **Bubble Physics** — 60 bubbles with elastic collisions, edge bouncing, and organic drift
 - **Solar Flare** — A special rainbow-pulsing orb that chain-pops every bubble on screen
+- **Sound Effects** — Synthesized in real time (Web Audio API): bubble pops, countdown ticks, start bell, solar flare shimmer and screen-clear fanfare
 - **4 Themes** — Unicorn 🦄, Rainbow 🌈, Forest 🌲, and Undersea 🐠
 - **4 Silhouette Colors** — Hot Pink, Cyan, Lime, and Gold
 - **High Scores** — Top 5 saved locally via `localStorage`
+- **Fullscreen Mode** — `⛶` button (bottom-right) hides the browser chrome for an immersive experience
+- **Responsive Fonts** — All UI text scales fluidly with viewport size, optimized for large and 4K screens
 - **Graceful Fallback** — Game works even without camera access
 
 ## 🎮 How to Play
@@ -51,7 +54,8 @@ python3 -m http.server 8080
 | **HTML5 Canvas** | Game rendering |
 | **JavaScript (ES6+)** | Game logic, physics |
 | **MediaPipe Tasks Vision** | Real-time person segmentation |
-| **CSS3** | UI overlays, animations |
+| **Web Audio API** | Synthesized sound effects (no audio files) |
+| **CSS3** | UI overlays, animations, fluid typography |
 | **localStorage** | High score persistence |
 
 ## 📁 Project Structure
