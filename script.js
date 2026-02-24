@@ -23,6 +23,23 @@ const highScoresEl = document.getElementById('high-scores-list');
 const restartBtn = document.getElementById('restart-btn');
 const themeBtns = document.querySelectorAll('.theme-btn');
 const colorBtns = document.querySelectorAll('.color-btn');
+const fullscreenBtn = document.getElementById('fullscreen-btn');
+
+// ---- Fullscreen toggle ----
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+            console.warn('[Bubble Room] Fullscreen failed:', err);
+        });
+    } else {
+        document.exitFullscreen();
+    }
+}
+function updateFullscreenIcon() {
+    fullscreenBtn.textContent = document.fullscreenElement ? '✕' : '⛶';
+}
+fullscreenBtn.addEventListener('click', toggleFullscreen);
+document.addEventListener('fullscreenchange', updateFullscreenIcon);
 
 // ---- Settings ----
 let selectedTheme = 'random';
@@ -125,9 +142,7 @@ class Bubble {
         this.isSolar = isSolar;
         const unit = Math.min(w, h); // base unit for relative sizing
         this.radius = unit * 0.005; // start tiny
-        this.maxRadius = isSolar
-            ? unit * (0.14 + Math.random() * 0.04)   // solar: 14-18% of screen
-            : unit * (0.04 + Math.random() * 0.04);   // normal: 4-8% of screen
+        this.maxRadius = unit * (0.04 + Math.random() * 0.04);   // 4-8% of screen
         this.growthRate = unit * 0.0014 + Math.random() * unit * 0.001;
         this.colorIdx = Math.floor(Math.random() * BUBBLE_FILL.length);
         this.phase = Math.random() * Math.PI * 2;

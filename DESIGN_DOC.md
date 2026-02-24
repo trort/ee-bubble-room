@@ -58,7 +58,6 @@ Since you are deploying to GitHub, you will need a `assets/` folder. Here is wha
 ### UI & Backgrounds
 
 * [x] **Theme Backgrounds (4):** `unicorn_bg.png`, `rainbow_bg.png`, `forest_bg.png`, `undersea_bg.png`. (High-res, optimized for web).
-* [ ] **Theme Borders (4):** PNG files with transparency. Use **9-slice-ready** designs where corners are distinct from the tiling edges. *(Not yet implemented)*
 * [ ] **Victory Badge:** `badge_top5.png` (A gold star, medal, or trophy icon). *(Not yet implemented)*
 * [ ] **Icons:** Simple icons for the Start Menu (a small unicorn, a leaf, etc.) to help non-readers. *(Not yet implemented)*
 

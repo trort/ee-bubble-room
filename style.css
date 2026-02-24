@@ -77,8 +77,37 @@ html {
 }
 
 /* ===== Start Screen ===== */
+#fullscreen-btn {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    z-index: 100;
+    background: rgba(255, 255, 255, 0.12);
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    color: #fff;
+    font-size: clamp(1.2rem, 3vmin, 2rem);
+    width: clamp(40px, 6vmin, 60px);
+    height: clamp(40px, 6vmin, 60px);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    pointer-events: auto;
+}
+
+#fullscreen-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+#fullscreen-btn:active {
+    transform: scale(0.92);
+}
+
 #start-screen h1 {
-    font-size: 3.5rem;
+    font-size: clamp(3rem, 11vmin, 12rem);
     font-weight: 900;
     background: linear-gradient(90deg, #ff69b4, #00bfff, #ff69b4);
     background-size: 200%;
@@ -101,13 +130,13 @@ html {
 }
 
 .subtitle {
-    font-size: 1.2rem;
+    font-size: clamp(1.4rem, 4vmin, 3rem);
     opacity: 0.7;
     margin-bottom: 10px;
 }
 
 .label {
-    font-size: 1rem;
+    font-size: clamp(1.2rem, 3.5vmin, 2.5rem);
     opacity: 0.8;
     margin-bottom: 4px;
 }
@@ -121,12 +150,12 @@ html {
 }
 
 .theme-btn {
-    padding: 10px 16px;
+    padding: clamp(7px, 1.5vmin, 14px) clamp(10px, 2vmin, 20px);
     border: 2px solid rgba(255, 255, 255, 0.2);
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.08);
     color: #fff;
-    font-size: 1rem;
+    font-size: clamp(1.1rem, 3.5vmin, 2.2rem);
     font-family: var(--font);
     cursor: pointer;
     transition: all 0.2s;
@@ -154,8 +183,8 @@ html {
 }
 
 .big-btn {
-    padding: 16px 48px;
-    font-size: 2rem;
+    padding: clamp(12px, 2.5vmin, 22px) clamp(32px, 6vmin, 64px);
+    font-size: clamp(2rem, 6.5vmin, 5rem);
     font-weight: 700;
     font-family: var(--font);
     border: none;
@@ -183,7 +212,7 @@ html {
 }
 
 #countdown-number {
-    font-size: 12rem;
+    font-size: clamp(8rem, 18vw, 14rem);
     font-weight: 900;
     animation: pulse 0.6s ease-in-out;
     text-shadow: 0 0 40px var(--primary), 0 0 80px var(--secondary);
@@ -214,8 +243,8 @@ html {
     width: 100%;
     display: flex;
     justify-content: space-between;
-    padding: 16px 24px;
-    font-size: 1.5rem;
+    padding: clamp(10px, 2vmin, 22px) clamp(14px, 2.5vmin, 30px);
+    font-size: clamp(1.1rem, 3vmin, 2.2rem);
     font-weight: 700;
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
     z-index: 5;
@@ -223,39 +252,20 @@ html {
 
 /* ===== End Screen ===== */
 #end-screen h2 {
-    font-size: 3rem;
+    font-size: clamp(2rem, 5vmin, 4.5rem);
     font-weight: 900;
 }
 
 #final-score {
-    font-size: 2rem;
+    font-size: clamp(1.4rem, 3.5vmin, 2.8rem);
     margin: 8px 0;
     color: var(--secondary);
 }
 
 /* ------------------------------------------------------------------ */
-/* Responsive Layout */
+/* Responsive Layout — clamp() handles most cases */
 @media (max-width: 600px) {
-    #start-screen h1 {
-        font-size: 2.2rem;
-    }
-
-    .big-btn {
-        font-size: 1.4rem;
-        padding: 12px 32px;
-    }
-
-    #hud {
-        font-size: 1.1rem;
-        padding: 10px 14px;
-    }
-
     #countdown-number {
-        font-size: 8rem;
-    }
-
-    .theme-btn {
-        font-size: 0.85rem;
-        padding: 8px 10px;
+        font-size: clamp(6rem, 20vw, 10rem);
     }
 }
