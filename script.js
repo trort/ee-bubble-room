@@ -24,6 +24,7 @@ const restartBtn = document.getElementById('restart-btn');
 const themeBtns = document.querySelectorAll('.theme-btn');
 const colorBtns = document.querySelectorAll('.color-btn');
 const fullscreenBtn = document.getElementById('fullscreen-btn');
+const muteBtn = document.getElementById('mute-btn');
 
 // ---- Fullscreen toggle ----
 function toggleFullscreen() {
@@ -43,19 +44,86 @@ document.addEventListener('fullscreenchange', updateFullscreenIcon);
 
 // ---- Audio Engine (Web Audio API) ----
 let audioCtx = null;
+let masterGain = null;   // routes all SFX — muted when isMuted
+let isMuted = false;
 
 function getAudioCtx() {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 1;
+        masterGain.connect(audioCtx.destination);
+    }
     if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
 }
+
+// ---- BGM ----
+const BGM_TRACKS = {
+    unicorn: new Audio('assets/unicorn.mp3'),
+    rainbow: new Audio('assets/rainbow.mp3'),
+    forest: new Audio('assets/forest.mp3'),
+    undersea: new Audio('assets/undersea.mp3'),
+};
+const ALL_THEMES = Object.keys(BGM_TRACKS);
+Object.values(BGM_TRACKS).forEach(a => {
+    a.loop = true;         // native loop = seamless restart, no gap
+    a.volume = 0.28;       // balanced against SFX (~0.3)
+    a.preload = 'auto';
+});
+let currentBgm = null;
+
+function playBgm(theme) {
+    if (currentBgm) { currentBgm.pause(); currentBgm.currentTime = 0; }
+    const track = BGM_TRACKS[theme] || BGM_TRACKS[ALL_THEMES[Math.floor(Math.random() * ALL_THEMES.length)]];
+    track.muted = isMuted;
+    track.play().catch(() => { });  // autoplay policy: silently fail until user gesture
+    currentBgm = track;
+}
+
+function stopBgm(fadeMs = 600) {
+    if (!currentBgm) return;
+    const track = currentBgm;
+    const step = track.volume / (fadeMs / 30);
+    const iv = setInterval(() => {
+        track.volume = Math.max(0, track.volume - step);
+        if (track.volume <= 0) {
+            clearInterval(iv);
+            track.pause();
+            track.currentTime = 0;
+            track.volume = 0.28;
+        }
+    }, 30);
+    currentBgm = null;
+}
+
+// ---- Mute toggle ----
+function setMute(muted) {
+    isMuted = muted;
+    muteBtn.textContent = muted ? '🔇' : '🔊';
+    // BGM
+    Object.values(BGM_TRACKS).forEach(a => a.muted = muted);
+    // SFX: via masterGain
+    if (masterGain) masterGain.gain.value = muted ? 0 : 1;
+}
+muteBtn.addEventListener('click', () => setMute(!isMuted));
+
+// Play a random BGM on the start screen immediately (requires a user gesture
+// the first time; subsequent visits will auto-play)
+document.addEventListener('click', function startScreenBGM() {
+    if (!currentBgm) {
+        const randomTheme = ALL_THEMES[Math.floor(Math.random() * ALL_THEMES.length)];
+        playBgm(randomTheme);
+    }
+    document.removeEventListener('click', startScreenBGM);
+}, { once: true });
 
 // Short bubble pop — sine drop from ~600Hz to 200Hz over 80ms
 function playPop() {
     const ac = getAudioCtx();
     const osc = ac.createOscillator();
     const gain = ac.createGain();
-    osc.connect(gain); gain.connect(ac.destination);
+    osc.connect(gain); gain.connect(masterGain);
     osc.type = 'sine';
     const now = ac.currentTime;
     osc.frequency.setValueAtTime(600, now);
@@ -74,7 +142,7 @@ function playPowerupSpawn() {
     [1, 1.5].forEach((ratio, i) => {
         const osc = ac.createOscillator();
         const gain = ac.createGain();
-        osc.connect(gain); gain.connect(ac.destination);
+        osc.connect(gain); gain.connect(masterGain);
         osc.type = 'sine';
         osc.frequency.setValueAtTime(300 * ratio, now + i * 0.05);
         osc.frequency.exponentialRampToValueAtTime(1200 * ratio, now + 0.6 + i * 0.05);
@@ -94,7 +162,7 @@ function playScreenClear() {
     [523, 659, 784, 1047].forEach((freq, i) => {
         const osc = ac.createOscillator();
         const gain = ac.createGain();
-        osc.connect(gain); gain.connect(ac.destination);
+        osc.connect(gain); gain.connect(masterGain);
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(freq, now + i * 0.1);
         gain.gain.setValueAtTime(0.25, now + i * 0.1);
@@ -111,7 +179,7 @@ function playScreenClear() {
     const filter = ac.createBiquadFilter();
     filter.type = 'highpass'; filter.frequency.value = 2000;
     const wGain = ac.createGain(); wGain.gain.value = 0.15;
-    src.connect(filter); filter.connect(wGain); wGain.connect(ac.destination);
+    src.connect(filter); filter.connect(wGain); wGain.connect(masterGain);
     src.start(now);
 }
 
@@ -121,7 +189,7 @@ function playTick() {
     const now = ac.currentTime;
     const osc = ac.createOscillator();
     const gain = ac.createGain();
-    osc.connect(gain); gain.connect(ac.destination);
+    osc.connect(gain); gain.connect(masterGain);
     osc.type = 'square';
     osc.frequency.setValueAtTime(880, now);
     osc.frequency.exponentialRampToValueAtTime(440, now + 0.05);
@@ -138,7 +206,7 @@ function playStartBell() {
     [523, 784, 1047].forEach((freq, i) => {
         const osc = ac.createOscillator();
         const gain = ac.createGain();
-        osc.connect(gain); gain.connect(ac.destination);
+        osc.connect(gain); gain.connect(masterGain);
         osc.type = 'sine';
         osc.frequency.value = freq;
         gain.gain.setValueAtTime(0.22, now + i * 0.01);
@@ -650,6 +718,7 @@ function runCountdown() {
         countdownOv.classList.remove('hidden');
         countdownOv.classList.add('active');
 
+        stopBgm(400); // fade out during countdown, silence for 3-2-1
         // Start preview so bg + silhouette are visible under the countdown
         previewRunning = true;
         requestAnimationFrame(previewLoop);
@@ -694,6 +763,9 @@ async function handleStart() {
     window.addEventListener('resize', resizeCanvas);
 
     await runCountdown();
+
+    // Switch BGM to match the selected theme (after countdown)
+    playBgm(selectedTheme);
     score = 0;
     solarSpawned = false;
     solarSpawnMs = 0;
@@ -730,6 +802,7 @@ function endGame() {
     finalScoreEl.textContent = `Final Score: ${score}`;
     saveHighScore(score);
     renderHighScores();
+    // Keep the game-theme BGM playing on the score screen
 
     // Remove click/touch handlers
     canvas.removeEventListener('click', handleCanvasClick);
@@ -1071,6 +1144,9 @@ themeBtns.forEach(btn => btn.addEventListener('click', () => {
     themeBtns.forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
     selectedTheme = btn.dataset.theme;
+    // Preview the matching BGM on the start screen
+    // (random stays on whatever is currently playing)
+    if (selectedTheme !== 'random') playBgm(selectedTheme);
 }));
 
 colorBtns.forEach(btn => btn.addEventListener('click', () => {
@@ -1101,6 +1177,9 @@ restartBtn.addEventListener('click', () => {
     startScreen.classList.add('active');
     startBtn.disabled = false;
     startBtn.textContent = '▶ GO!';
+    // Resume a random BGM on the start screen
+    const randomTheme = ALL_THEMES[Math.floor(Math.random() * ALL_THEMES.length)];
+    playBgm(randomTheme);
 });
 
 // ---- Click/Touch Fallback (no camera) ----

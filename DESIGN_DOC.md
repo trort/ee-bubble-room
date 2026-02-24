@@ -69,13 +69,17 @@ Since you are deploying to GitHub, you will need a `assets/` folder. Here is wha
 
 ### Sounds
 
-* [ ] **BGM (4):** One 60-second loop per theme. *(Not yet implemented)*
+* [x] **BGM (4):** One ~60-second looping track per theme (`unicorn.mp3`, `rainbow.mp3`, `forest.mp3`, `undersea.mp3`). Authored by **trort**.
+  - Start screen plays a random track; selecting a theme immediately previews that theme's BGM.
+  - BGM fades out when the countdown begins (silent during 3-2-1 + SFX).
+  - On game start the theme-matched BGM begins; it continues playing on the score screen.
+  - On restart a new random BGM plays on the start screen.
 * [x] **The "Pop":** Synthesized via Web Audio API (`playPop`).
 * [x] **Solar Flare Sound:** Rising shimmer on spawn (`playPowerupSpawn`); triumphant C-E-G-C arpeggio + whoosh on screen clear (`playScreenClear`).
 * [ ] **Presence Alert:** `ping_alert` — friendly chime when player leaves frame. *(Not yet implemented)*
 * [x] **Countdown:** Percussive tick each second (`playTick`); warm bell chord at go (`playStartBell`).
 
-> All implemented sounds are synthesized in real time using the **Web Audio API** — no audio files required.
+> All sound effects are synthesized in real time using the **Web Audio API** — no audio files required for SFX. BGM uses pre-recorded MP3 files in `assets/`.
 
 ---
 
