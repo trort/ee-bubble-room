@@ -41,7 +41,114 @@ function updateFullscreenIcon() {
 fullscreenBtn.addEventListener('click', toggleFullscreen);
 document.addEventListener('fullscreenchange', updateFullscreenIcon);
 
-// ---- Settings ----
+// ---- Audio Engine (Web Audio API) ----
+let audioCtx = null;
+
+function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    return audioCtx;
+}
+
+// Short bubble pop — sine drop from ~600Hz to 200Hz over 80ms
+function playPop() {
+    const ac = getAudioCtx();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.type = 'sine';
+    const now = ac.currentTime;
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.exponentialRampToValueAtTime(200, now + 0.08);
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+    osc.start(now);
+    osc.stop(now + 0.13);
+}
+
+// Rising shimmer — ascending glissando when solar flare spawns
+function playPowerupSpawn() {
+    const ac = getAudioCtx();
+    const now = ac.currentTime;
+    // Two oscillators for a rich shimmer
+    [1, 1.5].forEach((ratio, i) => {
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300 * ratio, now + i * 0.05);
+        osc.frequency.exponentialRampToValueAtTime(1200 * ratio, now + 0.6 + i * 0.05);
+        gain.gain.setValueAtTime(0, now + i * 0.05);
+        gain.gain.linearRampToValueAtTime(0.2, now + 0.1 + i * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7 + i * 0.05);
+        osc.start(now + i * 0.05);
+        osc.stop(now + 0.75);
+    });
+}
+
+// Triumphant chord sweep when solar flare screen-clears
+function playScreenClear() {
+    const ac = getAudioCtx();
+    const now = ac.currentTime;
+    // Ascending major arpeggio: C5 E5 G5 C6
+    [523, 659, 784, 1047].forEach((freq, i) => {
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + i * 0.1);
+        gain.gain.setValueAtTime(0.25, now + i * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.1 + 0.5);
+        osc.start(now + i * 0.1);
+        osc.stop(now + i * 0.1 + 0.55);
+    });
+    // Whoosh noise underneath
+    const buf = ac.createBuffer(1, ac.sampleRate * 0.5, ac.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    const src = ac.createBufferSource();
+    src.buffer = buf;
+    const filter = ac.createBiquadFilter();
+    filter.type = 'highpass'; filter.frequency.value = 2000;
+    const wGain = ac.createGain(); wGain.gain.value = 0.15;
+    src.connect(filter); filter.connect(wGain); wGain.connect(ac.destination);
+    src.start(now);
+}
+
+// Countdown tick — short percussive click
+function playTick() {
+    const ac = getAudioCtx();
+    const now = ac.currentTime;
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.exponentialRampToValueAtTime(440, now + 0.05);
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+    osc.start(now);
+    osc.stop(now + 0.09);
+}
+
+// Start bell — warm resonant ding
+function playStartBell() {
+    const ac = getAudioCtx();
+    const now = ac.currentTime;
+    [523, 784, 1047].forEach((freq, i) => {
+        const osc = ac.createOscillator();
+        const gain = ac.createGain();
+        osc.connect(gain); gain.connect(ac.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.22, now + i * 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+        osc.start(now + i * 0.01);
+        osc.stop(now + 1.25);
+    });
+}
+
+
 let selectedTheme = 'random';
 let selectedColor = 'random';
 
@@ -337,6 +444,7 @@ function spawnBubble(isSolar = false) {
     if (!b) return;
     const [sx, sy] = findSpawnPos(canvas.width, canvas.height);
     b.spawn(canvas.width, canvas.height, isSolar, sx, sy);
+    if (isSolar) playPowerupSpawn();
 }
 
 // ---- Bubble-Bubble Collision ----
@@ -548,19 +656,22 @@ function runCountdown() {
 
         let count = 3;
         countdownNum.textContent = count;
+        playTick();
         const iv = setInterval(() => {
             count--;
             if (count <= 0) {
                 clearInterval(iv);
-                previewRunning = false; // stop preview
+                previewRunning = false;
                 countdownOv.classList.add('hidden');
                 countdownOv.classList.remove('active');
+                playStartBell();
                 resolve();
             } else {
                 countdownNum.textContent = count;
                 countdownNum.style.animation = 'none';
                 void countdownNum.offsetHeight;
                 countdownNum.style.animation = '';
+                playTick();
             }
         }, 1000);
     });
@@ -921,6 +1032,7 @@ function popBubble(b) {
     b.active = false;
 
     if (wasSolar) {
+        playScreenClear();
         // Dramatic solar flare pop: lots of golden particles + screen flash
         for (let i = 0; i < 35; i++) {
             const angle = Math.random() * Math.PI * 2;
@@ -947,6 +1059,7 @@ function popBubble(b) {
             }
         });
     } else {
+        playPop();
         emitPop(b.x, b.y, 'white');
         score += 10;
     }
